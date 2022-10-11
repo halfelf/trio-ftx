@@ -22,7 +22,7 @@ from ftx.client import FtxClient
 
 
 class FtxStreamManager:
-    STREAM_URL = 'wss://ftx.com/ws/'
+    STREAM_URL = "wss://ftx.com/ws/"
 
     def __init__(self, client):
         """
@@ -37,7 +37,9 @@ class FtxStreamManager:
         self.commands_recv_chan: trio.MemoryReceiveChannel
         self.commands_send_chan, self.commands_recv_chan = trio.open_memory_channel(100)
 
-        self.msg_channels: Dict[Tuple, Tuple[trio.MemorySendChannel, trio.MemoryReceiveChannel]] = {}
+        self.msg_channels: Dict[
+            Tuple, Tuple[trio.MemorySendChannel, trio.MemoryReceiveChannel]
+        ] = {}
         # self.msg_send_chan, self.msg_recv_chan = trio.open_memory_channel(0)
         self.logged_in = trio.Event()
 
@@ -47,7 +49,11 @@ class FtxStreamManager:
     async def __aexit__(self):
         pass
 
-    async def _get_message(self, conn: trio_websocket.WebSocketConnection, task_status=trio.TASK_STATUS_IGNORED):
+    async def _get_message(
+        self,
+        conn: trio_websocket.WebSocketConnection,
+        task_status=trio.TASK_STATUS_IGNORED,
+    ):
         task_status.started()
         while True:
             message = await conn.get_message()
@@ -63,7 +69,11 @@ class FtxStreamManager:
                     # authentication
                     await self.authentication(conn)
 
-    async def _check_command(self, conn: trio_websocket.WebSocketConnection, task_status=trio.TASK_STATUS_IGNORED):
+    async def _check_command(
+        self,
+        conn: trio_websocket.WebSocketConnection,
+        task_status=trio.TASK_STATUS_IGNORED,
+    ):
         task_status.started()
         async for request in self.commands_recv_chan:
             # print(request)
@@ -73,33 +83,40 @@ class FtxStreamManager:
     async def authentication(self, conn: trio_websocket.WebSocketConnection):
         ts = int(time.time() * 1000)
         req = {
-            'op':   'login',
-            'args': {
-                'key':  self.client.api_key,
-                'sign': hmac.new(
-                        self.client.api_secret.encode(), f'{ts}websocket_login'.encode(), 'sha256').hexdigest(),
-                'time': ts,
-            }
+            "op": "login",
+            "args": {
+                "key": self.client.api_key,
+                "sign": hmac.new(
+                    self.client.api_secret.encode(),
+                    f"{ts}websocket_login".encode(),
+                    "sha256",
+                ).hexdigest(),
+                "time": ts,
+            },
         }
         await conn.send_message(json.dumps(req))
         await trio.sleep(1)
 
-    async def subscribe(self, channel: str, market: str = '') -> None:
-        req = {'op': 'subscribe', 'channel': channel}
+    async def subscribe(self, channel: str, market: str = "") -> None:
+        req = {"op": "subscribe", "channel": channel}
         if market:
-            req['market'] = market
+            req["market"] = market
         await self.commands_send_chan.send(req)
         self.msg_channels[(channel, market)] = trio.open_memory_channel(1000)
 
     async def unsubscribe(self, channel: str, market: str) -> None:
-        req = {'op': 'unsubscribe', 'channel': channel}
+        req = {"op": "unsubscribe", "channel": channel}
         if market:
-            req['market'] = market
+            req["market"] = market
         await self.commands_send_chan.send(req)
 
     @staticmethod
-    async def heartbeat(conn: trio_websocket.WebSocketConnection, timeout: int, interval: int,
-                        task_status=trio.TASK_STATUS_IGNORED):
+    async def heartbeat(
+        conn: trio_websocket.WebSocketConnection,
+        timeout: int,
+        interval: int,
+        task_status=trio.TASK_STATUS_IGNORED,
+    ):
         task_status.started()
         while True:
             with trio.fail_after(timeout):
@@ -108,24 +125,24 @@ class FtxStreamManager:
 
     async def _on_message(self, message):
         msg = json.loads(message)
-        typ = msg.get('type')
+        typ = msg.get("type")
         print(msg)
-        if typ == 'subscribed':
+        if typ == "subscribed":
             pass
-        elif typ == 'update':
-            channel, market = msg.get('channel'), msg.get('market', '')
+        elif typ == "update":
+            channel, market = msg.get("channel"), msg.get("market", "")
             await self.msg_channels[(channel, market)][0].send(msg)
-        elif typ == 'pong':
+        elif typ == "pong":
             # logging.debug('pong')
             pass
-        elif typ == 'unsubscribed':
-            self.msg_channels.pop((msg.get('channel'), msg.get('market')))
-        elif typ == 'error':
+        elif typ == "unsubscribed":
+            self.msg_channels.pop((msg.get("channel"), msg.get("market")))
+        elif typ == "error":
             warnings.warn(f"error message: {msg}")
         else:
             warnings.warn(f"unclassified message: {msg}")
 
-    async def get_message(self, channel: str, market: str = ''):
+    async def get_message(self, channel: str, market: str = ""):
         chan = self.msg_channels[(channel, market)][1]
         async for msg in chan:
             yield msg
