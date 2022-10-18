@@ -1,5 +1,5 @@
-from ftx.client import FtxClient
-from ftx.streams import FtxStreamManager
+from trio_ftx.client import FtxClient
+from trio_ftx.streams import FtxStreamManager
 import trio
 
 

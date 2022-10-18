@@ -1,5 +1,4 @@
 import time
-import urllib.parse
 from typing import Optional, Dict, Any, List
 
 import hmac

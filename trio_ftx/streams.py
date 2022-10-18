@@ -10,15 +10,7 @@ from typing import Dict, Tuple
 import trio
 import trio_websocket
 
-from ftx.client import FtxClient
-
-
-# class BinanceSocketType(str, Enum):
-#     SPOT = 'Spot'
-#     USD_M_FUTURES = 'USD_M_Futures'
-#     COIN_M_FUTURES = 'Coin_M_Futures'
-#     OPTIONS = 'Vanilla_Options'
-#     ACCOUNT = 'Account'
+from trio_ftx.client import FtxClient
 
 
 class FtxStreamManager:
