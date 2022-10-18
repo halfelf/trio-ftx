@@ -384,4 +384,5 @@ tags
 [._]*.un~
 
 .idea
+.fleet
 poetry.lock
