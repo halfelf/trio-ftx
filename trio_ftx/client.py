@@ -60,10 +60,8 @@ class FtxClient:
 
     def _generate_headers(self, method: str, path: str, **kwargs) -> Any:
         request = self._session.build_request(method, self._ENDPOINT + path, **kwargs)
-        parsed = urlparse(str(request.url))
-
         ts = int(time.time() * 1000)
-        signature_payload = f"{ts}{request.method}{parsed.path}".encode()
+        signature_payload = f"{ts}{request.method}{request.url.raw_path.decode()}".encode()
         if request.content:
             signature_payload += request.content
         signature = hmac.new(
@@ -100,10 +98,10 @@ class FtxClient:
         return await self._get(f"markets/{market}/trades")
 
     async def get_account_info(self) -> dict:
-        return await self._get("account")
+        return await self._get_auth("account")
 
     async def get_open_orders(self, market: str = None) -> List[dict]:
-        return await self._get("orders", {"market": market})
+        return await self._get_auth("orders", {"market": market})
 
     async def get_order_history(
         self,
@@ -113,7 +111,7 @@ class FtxClient:
         start_time: float = None,
         end_time: float = None,
     ) -> List[dict]:
-        return await self._get(
+        return await self._get_auth(
             "orders/history",
             {
                 "market": market,
@@ -133,7 +131,7 @@ class FtxClient:
         start_time: float = None,
         end_time: float = None,
     ) -> List[dict]:
-        return await self._get(
+        return await self._get_auth(
             "conditional_orders/history",
             {
                 "market": market,
